@@ -25,7 +25,12 @@ class usuarioController{
         let u = new Usuario();
         u.usuario = req.body.usuario;
         u.email = req.body.email;
-        u.pwd = req.body.pwd;
+        
+        //Bcrypt for password:
+        const bcrypt = require('bcrypt');
+        const password = req.body.pwd;
+        u.pwd = bcrypt.hashSync(password, 10);
+                
         u.role = ['01'];
         Usuario.create(u,(err, usuarioDB)=>{
             if(err){
@@ -42,11 +47,25 @@ class usuarioController{
         })
     }
 
-
     login( req:Request, res:Response){
         console.log(req.body);
         let usuario = req.body.usuario;
         let pwd = req.body.pwd;
+        Usuario.find({
+            usuario:usuario,
+            pwd:pwd
+        },(err,usuarioDB)=>{
+                if (err) {
+                    console.log(err);
+                    throw err;
+                } else if(!usuarioDB) {
+                    console.log('no existe usuario con ese nombre y contrase;a')
+                } else {
+                    //go to the main page
+                }
+        }
+        
+        );
         if(usuario){
             return res.status(200).json({
                 status:"ok",
