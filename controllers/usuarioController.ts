@@ -1,5 +1,7 @@
 import { Usuario } from './../models/usuario.modelo';
 import { Request, Response } from "express";
+import { Token } from '../clases/Token';
+
 
 class usuarioController{
      
@@ -41,7 +43,11 @@ class usuarioController{
                 return res.status(200).json({
                     status:'ok',
                     message:'el usuario creado es ' + usuarioDB.usuario,
-                    usuario:usuarioDB
+                    usuario:{
+                        _id: usuarioDB._id,
+                        usuario: usuarioDB.usuario,
+                        email: usuarioDB.email
+                    }
                 });
             }
         })
@@ -51,34 +57,41 @@ class usuarioController{
         console.log(req.body);
         let usuario = req.body.usuario;
         let pwd = req.body.pwd;
-        Usuario.find({
-            usuario:usuario,
-            pwd:pwd
-        },(err,usuarioDB)=>{
+        const bcrypt = require('bcrypt');
+
+        Usuario.findOne({usuario:usuario},null, null, (err,usuarioDB)=>{
                 if (err) {
                     console.log(err);
                     throw err;
-                } else if(!usuarioDB) {
-                    console.log('no existe usuario con ese nombre y contrase;a')
-                } else {
-                    //go to the main page
                 }
-        }
+                if(usuarioDB){
+                    if(bcrypt.compareSync(pwd, usuarioDB.pwd)) {
+                        const usuarioQueMAndo = new Usuario();
+                        usuarioQueMAndo._id = usuarioDB._id;
+                        usuarioQueMAndo.usuario = usuarioDB.usuario;
+                        usuarioQueMAndo.role = usuarioDB.role;
+                        return res.status(200).json({
+                            status: "ok",
+                            message: "el usuario es " + usuario +", y la contraseña es correcta",
+                            _id:usuarioDB._id,
+                            token: Token.generaToken(usuarioQueMAndo)
+                        });
+                    } else {
+                        return res.status(200).json({
+                            status: "ok",
+                            message: "la contrasena no es correcta"
+                        });
+                    }
+                } else {
+                    return res.status(200).json({
+                        status: "fail",
+                        message: "usuario incorrecto"
+                    });
+                }
+            }
         
-        );
-        if(usuario){
-            return res.status(200).json({
-                status:"ok",
-                message:"el usuario es "+ usuario
-            });
-        }
-        else {
-            return res.status(200).json({
-                status:"fail",
-                message:"no hay usuario"
-            });
-        }
-    };
+        )
+    }
 }
 
 export default usuarioController;
